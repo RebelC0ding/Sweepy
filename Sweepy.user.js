@@ -35,6 +35,7 @@ var sweepy = sweepy || {
       var block = 0;
       var checkBet = 0;
       var clickBet = 0;
+      var onloss = 0;
       var start = 0;
       /************************************************************
 			** display gui
@@ -58,13 +59,15 @@ var sweepy = sweepy || {
         var gui = '' +
         '<div style="float: left;"><label>sweepy</label> <small>v' + v + ' (by: HalfMoon)</small></div>' +
         '<div><label>base wager</label> : <input class="sweepyBase" type="number" value="' + config.baseBet + '" min="0.01" step="0.01" style="width: 75px; padding: 0; text-align: center;"> bits</div>' +
-        '<button class="double">X2</button>' + '<button class="half">/2</button>'+
+        '<button class="double">X2</button>' + '<button class="half">/2</button>' +
         '<div ><label># of bombs</label> : <input class="sweepyBomb" type="number" value="' + config.setBomb + '" min="1" max="24" step="1" style="width: 50px; padding: 0; text-align: center;"></div>' +
         '<div><label># to sweep</label> : <input class="sweepyTaps" type="number" value="' + config.tapBomb + '" min="1" max="24" step="1" style="width: 50px; padding: 0; text-align: center;"></div>' +
         '<div><label>house edge</label> : <input class="sweepyEdge" type="number" value="' + config.edge + '" min="0.8" max="5.0" step="0.1" style="width: 50px; padding: 0; text-align: center;"></div>' +
         '<div><label>wins</label> : <span class="wins">' + stats.wins + '</span> | <label>losses</label> : <span class="loss">' + stats.loss + '</span></div>' +
         '<div><label>cash</label> : <span class="balance">' + stats.balance + '</span> | <label>profit</label> : <span class="profit">' + stats.cash + '</span></div>' +
-        '<div style="float:center;width:200px;"><label>WinRatio</label> : <span class="winratio">' + stats.winratio +'%' + ' </span></div>' +
+        '<div style="float:center;width:200px;"><label>WinRatio</label> : <span class="winratio">' + stats.winratio + '%' + ' </span></div>' +
+        '<div><input type="checkbox" class="Stratego" value="Stratego"><label>Stratego Method</label>' +
+        '<div style="float:center;width:200px;"><label></label></div>' +
         '<button class="startMining">start</button>' + '<button class="reset">reset</button>';
         return gui;
       } /************************************************************
@@ -117,9 +120,39 @@ var sweepy = sweepy || {
           alert('No more money!');
         }
       }
+      function StrategoStrat() {
+        config.setBomb = Math.floor(Math.floor((Math.random() * 24) + 1))
+        Dispatcher.sendAction('SET_BOMBSELECT', config.setBomb);
+        $('.sweepyBomb').val(config.setBomb);
+        if ($('.sweepyBomb').val() >= 20) {
+          config.tapBomb = 1;
+          $('.sweepyTaps').val(config.tapBomb);
+          updateGUI();
+        } 
+        else if ($('.sweepyBomb').val() >= 10 && $('.sweepyBomb').val() <= 19) {
+          config.tapBomb = Math.floor(Math.floor((Math.random() * 3) + 1))
+          $('.sweepyTaps').val(config.tapBomb);
+          updateGUI();
+        } 
+        else if ($('.sweepyBomb').val() < 10 && $('.sweepyBomb').val() >= 8) {
+          config.tapBomb = Math.floor(Math.floor((Math.random() * 4) + 1))
+          $('.sweepyTaps').val(config.tapBomb);
+          updateGUI();
+        } 
+        else if ($('.sweepyBomb').val() <= 8) {
+          config.tapBomb = Math.floor(Math.floor((Math.random() * 6) + 1))
+          $('.sweepyTaps').val(config.tapBomb);
+          updateGUI();
+        } 
+        else {
+          config.tapBomb = Math.floor(Math.floor((Math.random() * 8) + 1))
+          $('.sweepyTaps').val(config.tapBomb);
+          updateGUI();
+        }
+      }
       function percent(i) {
         stats.winratio = (100 - (i * 4) - (config.setBomb * 4));
-        $('.winratio').text(stats.winratio+" %");
+        $('.winratio').text(stats.winratio + ' %');
       }
       function madClicker(time) {
         if (start == 1) {
@@ -155,8 +188,16 @@ var sweepy = sweepy || {
             $('.balance').text(stats.balance);
             $('.winratio').text('0 %');
             console.log('Number of losses are ' + stats.loss);
+            onloss++;
             setTimeout(function () {
-              $('#BS-START').click();
+              if (onloss == 3) {
+                onloss = 0;
+                StrategoStrat();
+                $('#BS-START').click();
+              }else{
+                $('#BS-START').click();
+              }
+           
             }, 200);
             botSweep();
           } 
@@ -226,6 +267,12 @@ var sweepy = sweepy || {
         $('.profit').text(stats.cash);
         updateGUI();
       });
+      $('.Stratego').click(function () {
+        if ($(this).is(':checked')) // "this" refers to the element that fired the event
+        {
+          StrategoStrat();
+        }
+      });
       $('.startMining').click(function () {
         if ($('.startMining').text() == 'start') {
           $('.startMining').text('stop');
@@ -235,6 +282,7 @@ var sweepy = sweepy || {
           block = 0;
           setPage();
           getBalance();
+          updateGUI();
           $('#BS-START').click();
           botSweep();
         } else {
