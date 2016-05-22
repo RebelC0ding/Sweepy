@@ -190,14 +190,17 @@ var sweepy = sweepy || {
             console.log('Number of losses are ' + stats.loss);
             onloss++;
             setTimeout(function () {
-              if (onloss == 3) {
+              if (onloss == 3 && $(".Stratego").is(':checked')) {
                 onloss = 0;
                 StrategoStrat();
+                wager = (config.baseBet / 1000000).toFixed(8);
+                Dispatcher.sendAction('UPDATE_WAGER', {
+                  str: wager.toString()
+                });
                 $('#BS-START').click();
-              }else{
+              } else {
                 $('#BS-START').click();
               }
-           
             }, 200);
             botSweep();
           } 
