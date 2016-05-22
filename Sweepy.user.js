@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         sweepy
 // @namespace    http://tweakfix.wordpress.com
-// @version      0.1.0a
+// @version      0.2.0b
 // @description  BitSweep bot for bit-exo.com!
 // @author       HalfMoon
 // @match        https://bit-exo.com/
 // @grant        none
 // ==/UserScript==
-var v = '0.1.0a';
+var v = '0.2.0b';
 var sweepy = sweepy || {
 }; // declare sweepy as object
 (function ($) { // $ forces jQuery into our function (jQuery is already on site, no need to include)
@@ -28,7 +28,8 @@ var sweepy = sweepy || {
         wins: 0,
         loss: 0,
         cash: 0, // profit (hopefully)
-        balance: 0
+        balance: 0,
+        winratio: 0
       };
       var nextWager = 0;
       var block = 0;
@@ -46,7 +47,7 @@ var sweepy = sweepy || {
         border: '1px solid white',
         color: '#2d3e50',
         fontSize: '85%',
-        textAlign: 'right',
+        textAlign: 'center',
         height: 'auto', // allows box to grow to fit content
         width: '175px',
         padding: '2px',
@@ -57,13 +58,14 @@ var sweepy = sweepy || {
         var gui = '' +
         '<div style="float: left;"><label>sweepy</label> <small>v' + v + ' (by: HalfMoon)</small></div>' +
         '<div><label>base wager</label> : <input class="sweepyBase" type="number" value="' + config.baseBet + '" min="0.01" step="0.01" style="width: 75px; padding: 0; text-align: center;"> bits</div>' +
-        '<button class="double">X2</button>'+ '<button class="half">/2</button>'+
+        '<button class="double">X2</button>' + '<button class="half">/2</button>'+
         '<div ><label># of bombs</label> : <input class="sweepyBomb" type="number" value="' + config.setBomb + '" min="1" max="24" step="1" style="width: 50px; padding: 0; text-align: center;"></div>' +
         '<div><label># to sweep</label> : <input class="sweepyTaps" type="number" value="' + config.tapBomb + '" min="1" max="24" step="1" style="width: 50px; padding: 0; text-align: center;"></div>' +
         '<div><label>house edge</label> : <input class="sweepyEdge" type="number" value="' + config.edge + '" min="0.8" max="5.0" step="0.1" style="width: 50px; padding: 0; text-align: center;"></div>' +
         '<div><label>wins</label> : <span class="wins">' + stats.wins + '</span> | <label>losses</label> : <span class="loss">' + stats.loss + '</span></div>' +
         '<div><label>cash</label> : <span class="balance">' + stats.balance + '</span> | <label>profit</label> : <span class="profit">' + stats.cash + '</span></div>' +
-        '<button class="startMining">start</button>';
+        '<div style="float:center;width:200px;"><label>WinRatio</label> : <span class="winratio">' + stats.winratio +'%' + ' </span></div>' +
+        '<button class="startMining">start</button>' + '<button class="reset">reset</button>';
         return gui;
       } /************************************************************
 			** setting handler
@@ -108,12 +110,16 @@ var sweepy = sweepy || {
         Dispatcher.sendAction('CHANGE_GAME_TAB', 'BITSWEEP');
         start = 1;
       }
-      function stopIt(){
-        if($('.sweepyBase').val<stats.balance){
+      function stopIt() {
+        if ($('.sweepyBase').val < stats.balance) {
           clearTimeout(clickBet);
-            clearTimeout(checkBet);
-          alert("No more money!");
+          clearTimeout(checkBet);
+          alert('No more money!');
         }
+      }
+      function percent(i) {
+        stats.winratio = (100 - (i * 4) - (config.setBomb * 4));
+        $('.winratio').text(stats.winratio+" %");
       }
       function madClicker(time) {
         if (start == 1) {
@@ -126,6 +132,7 @@ var sweepy = sweepy || {
         }
         function madclick(i) {
           console.log('Click', i);
+          percent(i);
           $('.bs-hide.' + i).children('.BS_BTN').click();
           checkBet = setTimeout(check, time, i);
         }
@@ -133,6 +140,7 @@ var sweepy = sweepy || {
           console.log('Check', i);
           if (worldStore.state.bets.data[worldStore.state.bets.end].profit > 0 && i < config.tapBomb) {
             i++;
+            percent(i);
             console.log('Increment i');
             stats.cash += Math.round(worldStore.state.bets.data[worldStore.state.bets.end].profit) / 100;
             Number((stats.cash).toFixed(2));
@@ -145,6 +153,7 @@ var sweepy = sweepy || {
             $('.loss').text(stats.loss);
             getBalance();
             $('.balance').text(stats.balance);
+            $('.winratio').text('0 %');
             console.log('Number of losses are ' + stats.loss);
             setTimeout(function () {
               $('#BS-START').click();
@@ -182,32 +191,39 @@ var sweepy = sweepy || {
         Number(stats.cash).toFixed(2);
         return stats.cash;
       }
-
       function botSweep() {
         // loop through tiles - click the first available tile
         clearTimeout(clickBet);
         clearTimeout(checkBet);
         if (block == 0) {
-          madClicker(2000);
+          madClicker(1000);
         } 
         else if (block == 1 || stats.balance < config.baseBet) {
           console.log('Blocked');
           clearTimeout(clickBet);
         } 
-        
         else {
           console.log('Emergency Start');
-          madClicker(2000);
+          madClicker(1000);
         }
       }
-      $('.double').click(function(){
-        config.baseBet=config.baseBet*2;
+      $('.double').click(function () {
+        config.baseBet = config.baseBet * 2;
         $('.sweepyBase').val(config.baseBet);
         updateGUI();
       });
-      $('.half').click(function(){
-        config.baseBet=config.baseBet/2;
+      $('.half').click(function () {
+        config.baseBet = config.baseBet / 2;
         $('.sweepyBase').val(config.baseBet);
+        updateGUI();
+      });
+      $('.reset').click(function () {
+        stats.wins = 0;
+        stats.loss = 0;
+        stats.cash = 0;
+        $('.wins').text(stats.wins);
+        $('.loss').text(stats.loss);
+        $('.profit').text(stats.cash);
         updateGUI();
       });
       $('.startMining').click(function () {
@@ -219,7 +235,6 @@ var sweepy = sweepy || {
           block = 0;
           setPage();
           getBalance();
-          updateSettings();
           $('#BS-START').click();
           botSweep();
         } else {
