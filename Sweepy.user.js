@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         sweepy
 // @namespace    http://tweakfix.wordpress.com
-// @version      0.2.0b
+// @version      0.2.5c
 // @description  BitSweep bot for bit-exo.com!
 // @author       HalfMoon
 // @match        https://bit-exo.com/
 // @grant        none
 // ==/UserScript==
-var v = '0.2.0b';
+var v = '0.2.5c';
 var sweepy = sweepy || {
 }; // declare sweepy as object
 (function ($) { // $ forces jQuery into our function (jQuery is already on site, no need to include)
