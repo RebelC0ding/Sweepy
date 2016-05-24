@@ -36,6 +36,8 @@ var sweepy = sweepy || {
       var checkBet = 0;
       var clickBet = 0;
       var onloss = 0;
+      var marti = 0;
+      var backup = 0;
       var start = 0;
       /************************************************************
 			** display gui
@@ -67,6 +69,7 @@ var sweepy = sweepy || {
         '<div><label>cash</label> : <span class="balance">' + stats.balance + '</span> | <label>profit</label> : <span class="profit">' + stats.cash + '</span></div>' +
         '<div style="float:center;width:200px;"><label>WinRatio</label> : <span class="winratio">' + stats.winratio + '%' + ' </span></div>' +
         '<div><input type="checkbox" class="Stratego" value="Stratego"><label>Stratego Method</label>' +
+        '<div><input type="checkbox" class="Marti" value="Marti"><label>Martingale Method</label>' +
         '<div style="float:center;width:200px;"><label></label></div>' +
         '<button class="startMining">start</button>' + '<button class="reset">reset</button>';
         return gui;
@@ -150,6 +153,18 @@ var sweepy = sweepy || {
           updateGUI();
         }
       }
+      function Marti(){
+        if(marti==1){
+          config.baseBet= backup;
+          $('.sweepyBase').val(config.baseBet);
+        updateSettings();
+        }else{
+          onloss=0;
+        config.baseBet = config.baseBet * 2;
+        $('.sweepyBase').val(config.baseBet);
+        updateSettings();
+        }
+      }
       function percent(i) {
         stats.winratio = (100 - (i * 4) - (config.setBomb * 4));
         $('.winratio').text(stats.winratio + ' %');
@@ -180,6 +195,7 @@ var sweepy = sweepy || {
             clickBet = setTimeout(madclick, time, i);
           } else if (worldStore.state.bets.data[worldStore.state.bets.end].profit < 0) {
             console.log('tile number ' + i + ' Loss');
+            marti=0;
             getProfit();
             $('.profit').text(stats.cash);
             stats.loss++;
@@ -189,15 +205,21 @@ var sweepy = sweepy || {
             $('.winratio').text('0 %');
             console.log('Number of losses are ' + stats.loss);
             onloss++;
+            console.log("onloss: "+onloss);
             setTimeout(function () {
-              if (onloss == 3 && $(".Stratego").is(':checked')) {
-                onloss = 0;
+              if (onloss == 3 ) {
+                if($(".Stratego").is(':checked')){
+                  onloss = 0;
                 StrategoStrat();
-                wager = (config.baseBet / 1000000).toFixed(8);
-                Dispatcher.sendAction('UPDATE_WAGER', {
-                  str: wager.toString()
-                });
-                $('#BS-START').click();
+                  updateGUI();
+                  $('#BS-START').click();
+                }
+                else if($(".Marti").is(':checked')){
+                  console.log("Martingale");
+                  Marti();
+                  $('#BS-START').click();
+                  updateGUI();
+                }
               } else {
                 $('#BS-START').click();
               }
@@ -206,6 +228,8 @@ var sweepy = sweepy || {
           } 
           else if (i >= config.tapBomb) {
             console.log('We Won');
+            onloss=0;
+            marti=1;
             stats.wins++;
             getProfit();
             $('.profit').text(stats.cash);
@@ -213,8 +237,10 @@ var sweepy = sweepy || {
             console.log('Number of wins are ' + stats.wins);
             getBalance();
             $('.balance').text(stats.balance);
+            setTimeout(function () {
+              Marti();
             $('#BS-START').click();
-            $('#BS-START').click();
+                          }, 200);
             botSweep();
           } 
           else {
@@ -274,6 +300,12 @@ var sweepy = sweepy || {
         if ($(this).is(':checked')) // "this" refers to the element that fired the event
         {
           StrategoStrat();
+        }
+      });
+       $('.Marti').click(function () {
+        if ($(this).is(':checked')) // "this" refers to the element that fired the event
+        {
+          backup=config.baseBet;
         }
       });
       $('.startMining').click(function () {
