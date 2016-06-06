@@ -312,9 +312,11 @@ var sweepy = sweepy || {
         if ($('.startMining').text() == 'start') {
           $('.startMining').text('stop');
           // make sure all settings are set on site
+          backup=config.baseBet;
           updateSettings();
           // click start game
           block = 0;
+          
           setPage();
           getBalance();
           updateGUI();
